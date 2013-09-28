@@ -5,7 +5,6 @@ A Clojure library designed to ... well, that part is up to you.
 ## TODO
 
 - Hello world
-(- Use Github login)
 - Select user (or term?)
 - Show 10 in reasonably pretty print
 - Possibly email

@@ -6,6 +6,8 @@
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [compojure "1.1.5"]
                  [ring "1.2.0"]
-                 [http-kit "2.1.11"]]
+                 [hiccup "1.0.2"]
+                 [http-kit "2.1.10"]
+                 [cheshire "5.2.0"]]
   :plugins [[lein-ring "0.8.7"]]
   :ring  {:handler followhackers.core/app})
