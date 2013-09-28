@@ -1,4 +1,4 @@
-(ns hnfollow.core)
+(ns followhackers.core)
 
 (defn foo
   "I don't do a whole lot."
