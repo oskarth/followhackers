@@ -27,7 +27,7 @@
 ;; TODO: fan subscribe counter
 ;; TODO: analytics
 
-
+;; TODO: nothing should be there at start page
 
 ;; data
 
@@ -170,7 +170,7 @@
 (defn index-page [q e]
   (template
    (search-form q)
-   (httptest q)
+   (if (empty? q) "" (httptest q))
    [:br]
    (if (= q "") "" (email-form q))))
 
@@ -197,6 +197,7 @@
   (update-fans! q e)
   (update-celebs! q e)
 
+  ;; TODO: this is what it would've looked like yesterday
   ;; TODO: make async
   (email! e
           (str "You subscribed to " q "\n\n To unsubscribe, click HERE.")) ;; TODO: fix body and unsub
