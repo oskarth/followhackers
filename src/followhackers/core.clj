@@ -4,6 +4,7 @@
         [hiccup.form]
         [hiccup.element]
         [cheshire.core]
+        [postal.core]
         [ring.middleware.params]
         [ring.middleware.session]
         [ring.util.response])
@@ -11,10 +12,11 @@
             [compojure.route :as route]
             [org.httpkit.client :as http]))
 
-;; TODO: sort by last day
+;; TODO: postal for email
+;; TODO: date fix last 24 hours
+;; TODO: polling to check every 24 hour and replace celebs db, right before email
 
 ;; TODO: assoc/dissoc responses
-;; TODO: postal for email
 ;; (def f (future (Thread/sleep 10000) (println "done") 100))
 ;; TODO: commit and tag release
 ;; TODO: search for multiple users at once
@@ -27,11 +29,11 @@
 
 ;; data
 
-(def celebs (atom {}))
-(defn save-celebs! [](spit "data/celebs.db" (prn-str @celebs)))
+;;(def celebs (atom {}))
+(defn save-celebs! [] (spit "data/celebs.db" (prn-str @celebs)))
 (defn load-celebs! [] (reset! celebs (read-string (slurp "data/celebs.db"))))
 
-(def fans (atom {}))
+;;(def fans (atom {}))
 (defn save-fans! [] (spit "data/fans.db" (prn-str @fans)))
 (defn load-fans! [] (reset! fans (read-string (slurp "data/fans.db"))))
 
@@ -40,7 +42,7 @@
 ;;(load-celebs!)
 ;;(load-fans!)
 
-
+@celebs
 
 ;; http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][username]=pg&pretty_print=true&filter[fields][create_ts]=[2013-09-20T00:00:00Z%20+%20TO%20+%20*]
 ;; (def hnurl "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][username]=oskarth")
@@ -48,12 +50,43 @@
 ;; http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20asc&filter[fields][username]=oskarth&filter[fields][create_ts]=[2013-09-20T00:00:00Z+TO+*]
 
 
-
 ;; utils
 
 (defn get-results [u]
   (get (parse-string (:body u))
        "results"))
+
+;; TODO oops acomment
+(defn htmlify [res]
+  [:br]
+  (for [n (range (count res))] (acomment res n)))
+
+;; TODO this should only happen at polling
+(defn populate-celebs! []
+  (load-celebs!) ;; first, to update celebs atom
+
+  (for [name (keys @celebs)]
+    (fetch-celeb! name)))
+
+;; TODO update date
+(defn fetch-celeb! [name]
+ (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
+        url2 "&filter[fields][create_ts]=[2013-09-25T00:00:00Z+TO+*]"
+       u1 (http/get (str url1 name url2))]
+
+   ;; store html in db
+   (swap! celebs assoc name
+          (html5 (htmlify (get (parse-string (:body @u1)) "results")))))
+ (save-celebs!))
+
+
+;; TODO: __
+;; not quite, but ish; iterate over vals and only if exists
+;; (spit "/tmp/foo" (html5 @celebs))
+
+(defn email! [to body]
+  (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass (System/getenv "FHPWD") :ssl :true}
+                {:from "followhackers@gmail.com" :to to "subject" "Follow Hackers: TODAY" :body body}))
 
 
 
@@ -114,13 +147,8 @@
 (defn httptest [q]
   (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
         url2 "&filter[fields][create_ts]=[2013-09-25T00:00:00Z+TO+*]"
-        u1 (http/get (str url1 q url2))
-        ;;u1 (http/get (str "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][username]=" q))
-        u2 (http/get (str "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][username]=" "pg"))]
-    ;; Handle responses one-by-one, blocking as necessary
-    ;; Other keys :headers :body :error :opts
-    (println "response1's status: " (:status @u1))
-    (println "response2's status: " (:status @u2))
+        u1 (http/get (str url1 q url2))]
+    (println "response's status: " (:status @u1))
     (make-show (get (parse-string (:body @u1)) "results"))))
 
 
@@ -161,7 +189,15 @@
   (println "Celebs: " @celebs)
   (save-celebs!) ;; saves to disc
 
+  ;; TODO: make async
+  (email! "me@oskarth.com" "bodytest") ;; TODO: fix to and body
+
+  ;; QQQ TODO: first, poll-fn to get celebs data
+
+
   (str "You've subscribed to " q ". Check your inbox!"))
+
+
 
 ;; TODO side effects
 (defn dissoc-page [q e]
