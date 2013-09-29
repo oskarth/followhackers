@@ -2,3 +2,4 @@
 
 - change polling to hours
 - change passwd to ENV
+- enable polling at end
