@@ -95,6 +95,11 @@
                   "Search "
                   [:input {:type "text" :name "q" :value (or q "") :size "17"}])))
 
+(defn dissoc-form []
+  (html5 (form-to [:POST "/dissoc"]
+                  "Dissoc email "
+                  [:input {:type "text" :name "q" :value "" :size "17"}])))
+
 (defn email-form [q]
   (html5
    [:h1 "Get daily updates from " (str q) "."]
@@ -121,8 +126,20 @@
            (make-submission (nth res i))
            (make-acomment (nth res i)))]])
 
+(defn get-mail-content [fan]
+  (html5
+   (for [celeb (get (load-fans!) fan)]
+     (get (load-celebs!) celeb))))
+
+(defn get-mail-body [fan]
+  (html5
+   [:h2 "Activity last 24 hours"]
+   (get-mail-content fan)
+   [:br] [:hr] "To unsubscribe, click " (link-to "http://hs.clojurecup.com/dissoc" "here")))
 
 
+
+;; Side effects purgatory.
 ;; update data functions
 
 ;; store celebs html in db
@@ -139,6 +156,10 @@
   (swap! fans
          (fn [m] (assoc m (str fan)
                        (conj (set (get m (str fan))) (str celeb)))))
+  (save-fans!))
+
+(defn remove-fan! [name]
+  (swap! fans dissoc name)
   (save-fans!))
 
 
@@ -165,15 +186,12 @@
     (fetch-celeb! name)))
 
 ;; html for all celebs that fan subscribes to
-(defn get-mail-content [fan]
-  (html5
-   (for [celeb (get (load-fans!) fan)]
-     (get (load-celebs!) celeb))))
 
 ;; loops over all fans and emails them their digest
 (defn mass-mail!! []
   (doseq [fan (keys (load-fans!))]
-    (email! fan (get-mail-content fan))))
+    (email! fan (get-mail-body fan))))
+
 
 ;; every 24th hour: (take 10 (periodic-seq (time/today-at-midnight) (time/hours 24)))
 (defn polling!! []
@@ -182,7 +200,7 @@
              ;; SUPER IMPORTANT.
 
              ;;(periodic-seq (time/today-at-midnight) (time/hours 24))
-             (periodic-seq (time/now) (time/minutes 3)))
+             (periodic-seq (time/now) (time/minutes 5)))
             (fn [time]
               ;; mails all fans with their latest gossip
               (do
@@ -225,21 +243,19 @@
 
 
 ;; TODO: fix multi so it send for all, or do several at once?
-(defn assoc-page [q e]
-  (update-fans! q e)
-  (email! e
-          (html5
-           "Activity last 24 hours:" [:br] [:br]
-           (get @celebs q)
-           [:br] [:br] "To unsubscribe, click " (link-to "hs.clojurecup.com/dissoc" "here")))
+(defn assoc-page [celeb fan]
+  (update-fans! celeb fan)
+  (email! fan (get-mail-body fan))
+  (str "You've subscribed to " celeb ". Check your inbox!"))
 
-  (str "You've subscribed to " q ". Check your inbox!"))
+;; page with form where you unsubscribe
+(defn dissoc-page []
+  (html5 (dissoc-form)))
 
-;; TODO unsubscribe all
-(defn dissoc-page [q e]
-  (str "You've unsubscribed from " q "."))
-
-
+;; this also includes the html render code
+(defn unsubscribe! [q]
+  (remove-fan! q)
+  (str "You've been unsubscribed."))
 
 ;; routes and app
 
@@ -247,8 +263,8 @@
   (GET "/" [q e] (index-page "" ""))
   (POST "/search" [q e] (index-page q ""))
   (POST "/assoc" [q e] (assoc-page q e))
-  (GET "/dissoc" [q e] (dissoc-page q e))
-  (POST "/dissoc" [q e] (dissoc-page q e))
+  (GET "/dissoc" [] (dissoc-page))
+  (POST "/dissoc" [q] (unsubscribe! q))
   (route/resources "/")
   (route/not-found "404"))
 
