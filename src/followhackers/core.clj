@@ -10,10 +10,11 @@
         [ring.middleware.session]
         [ring.util.response])
   (:require [compojure.handler :as handler]
+            [clj-time.core :as time]
+            [clj-time.coerce :as timec]
             [compojure.route :as route]
             [org.httpkit.client :as http]))
 
-;; TODO: email body test send
 ;; TODO: date fix last 24 hours
 ;; TODO: polling
 
@@ -31,6 +32,8 @@
 ;; TODO: margins at end if long results
 ;; TODO: fix unsubscribe
 
+;; TODO: autofocus search
+
 
 
 ;; data
@@ -45,6 +48,12 @@
 
 
 ;; utils / partials
+
+;; yesterday midnight
+(defn midnight []
+  (timec/to-string
+   (time/minus- (time/today-at-midnight)
+                (time/days 1))))
 
 (defn email! [to content]
   (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass (System/getenv "FHPWD") :ssl :true}
@@ -71,27 +80,27 @@
    " | on: " (hn-link (get-in resi ["item" "discussion" "id"])
                       (get-in resi ["item" "discussion" "title"]))
    [:br]
-   [:span {:class "comment"} (get-in resi ["item" "text"])]))
+   [:span (get-in resi ["item" "text"])]))
 
 (defn acomment [res i]
-  [:div
-    "by " (get-in (nth res i) ["item" "username"]) " | "
-    (hn-link (get-in (nth res i) ["item" "id"]) "link")
+  [:div.comment [:p.comment
+         "by " (get-in (nth res i) ["item" "username"]) " | "
+         (hn-link (get-in (nth res i) ["item" "id"]) "link")
 
-    ;; if discussion is nil, it's a submission
-    (if (nil? (get-in (res i) ["item" "discussion"]))
-      (make-submission (nth res i))
-      (make-acomment (nth res i)))])
+         ;; if discussion is nil, it's a submission
+         (if (nil? (get-in (res i) ["item" "discussion"]))
+           (make-submission (nth res i))
+           (make-acomment (nth res i)))]])
 
 (defn htmlify [res]
   [:br]
   (for [n (range (count res))] (acomment res n)))
 
-;; TODO update date
 (defn fetch-celeb! [name]
  (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
-        url2 "&filter[fields][create_ts]=[2013-09-25T00:00:00Z+TO+*]"
-       u1 (http/get (str url1 name url2))]
+       url2 "&filter[fields][create_ts]=["
+       url3 "+TO+*]"
+       u1 (http/get (str url1 name url2 (midnight) url3))]
 
    ;; store html in db
    (swap! celebs assoc name
@@ -132,12 +141,27 @@
 
 
 
+;; TODO REMOVE THIS
+(def url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]=")
+(def url2 "&filter[fields][create_ts]=[")
+(def url3 "+TO+*]")
+
+(def uu (http/get (str url1 "pg" url2 (midnight) url3)))
+;;midnight too early? YES
+
+(midnight)
+
+
+
+
 
 ;; TODO fix date here too!
+;; try it
 (defn httptest [name]
   (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
-        url2 "&filter[fields][create_ts]=[2013-09-25T00:00:00Z+TO+*]"
-        u1 (http/get (str url1 name url2))]
+        url2 "&filter[fields][create_ts]=["
+        url3 "+TO+*]"
+        u1 (http/get (str url1 name url2 (midnight) url3))]
 
     ;; store html in db
     (swap! celebs assoc name
