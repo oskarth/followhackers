@@ -51,14 +51,23 @@
 ;;"http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts=asc&limit=100&?filter[fields][username]=oskarth&filter[fields][create_ts]=[2013-01-01T00:00:00Z+TO+*]"
 ;; http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20asc&filter[fields][username]=oskarth&filter[fields][create_ts]=[2013-09-20T00:00:00Z+TO+*]
 
-
 ;; utils
 
 (defn get-results [u]
   (get (parse-string (:body u))
        "results"))
 
-;; TODO oops acomment
+(defn hn-link [id name]
+  (link-to (str "https://news.ycombinator.com/item?id=" id) name))
+
+(defn make-acomment [resi]
+  (html5
+   " | on: " (hn-link (get-in resi ["item" "discussion" "id"])
+                      (get-in resi ["item" "discussion" "title"]))
+   [:br]
+   [:span {:class "comment"} (get-in resi ["item" "text"])]))
+
+
 (defn htmlify [res]
   [:br]
   (for [n (range (count res))] (acomment res n)))
@@ -93,16 +102,6 @@
 
 
 ;; html partials
-
-(defn hn-link [id name]
-  (link-to (str "https://news.ycombinator.com/item?id=" id) name))
-
-(defn make-acomment [resi]
-  (html5
-   " | on: " (hn-link (get-in resi ["item" "discussion" "id"])
-                      (get-in resi ["item" "discussion" "title"]))
-   [:br]
-   [:span {:class "comment"} (get-in resi ["item" "text"])]))
 
 (defn make-submission [resi]
   ;; TODO: link to submission?
