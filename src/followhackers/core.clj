@@ -32,6 +32,14 @@
 ;; TODO: fix unsubscribe
 ;; TODO: autofocus search
 ;; TODO: sup with celeb (load-celeb!) mismatch?
+;; TODO: chime-in is really cpu-intensive, temp or not? other soln?
+;; TODO: env noob, oh well.
+
+;; WARNING: POLLING is started automatically!
+
+;; TODO: figure out how to get the ENV to work in emacs for repl email polling testing
+;; atm swap manually when replling
+(def passwd (System/getenv "FHPWD"))
 
 (def analytics
 "<script>
@@ -62,19 +70,17 @@
 (load-celebs!)
 (load-fans!)
 
-
-
 ;; utils
 
 (defn midnight [] (timec/to-string (time/minus- (time/today-at-midnight) (time/days 1))))
 
 (defn hn-link [id name] (link-to (str "https://news.ycombinator.com/item?id=" id) name))
 
+
 (defn email! [to content]
-  (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass (System/getenv "FHPWD") :ssl :true}
+  (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass passwd :ssl :true}
                 {:from "followhackers@gmail.com" :to to "subject" "Follow Hackers: TODAY"
                  :body [{:type "text/html" :content content}]}))
-
 
 
 ;; html partials
@@ -132,7 +138,9 @@
 
 
 
-;; fetching, polling etc
+;; SIDE EFFECT HELL - fetching, polling etc
+;; !! is the Ninth Circle. This is what it looks like
+;; https://upload.wikimedia.org/wikipedia/commons/4/44/Gustave_Dore_Inferno34.jpg
 
 ;; uses HNSearch API to get latest activity from the specified user
 (defn fetch-celeb! [user]
@@ -146,29 +154,41 @@
   (fetch-celeb! name)
   (html5 (get (load-celebs!) name)))
 
-
-;; TODO this should only happen at polling
+;; fetches all celebs
 (defn populate-celebs! []
-  (load-celebs!) ;; first, to update celebs atom
-
-  (for [name (keys @celebs)]
+  (for [name (keys (load-celebs!))]
     (fetch-celeb! name)))
 
+;; html for all celebs that fan subscribes to
+(defn get-mail-content [fan]
+  (html5
+   (for [celeb (get (load-fans!) fan)]
+     (get (load-celebs!) celeb))))
+
+;; loops over all fans and emails them their digest
+(defn mass-mail!! []
+  (doseq [fan (keys (load-fans!))]
+    (email! fan (get-mail-content fan))))
 
 ;; every 24th hour: (take 10 (periodic-seq (time/today-at-midnight) (time/hours 24)))
-;; TODO how/when start?
-;; be careful.
 (defn polling!! []
   (chime-at (rest
              ;; TODO: change this temporary test value!
+             ;; SUPER IMPORTANT.
+
              ;;(periodic-seq (time/today-at-midnight) (time/hours 24))
-             (periodic-seq (time/today-at-midnight) (time/minutes 5))
-             )
+             (periodic-seq (time/now) (time/minutes 3)))
             (fn [time]
-              ;; loop through all and then email each.
-              ;; start with one email here
-              (email! "me@oskarth.com"
-                      "content"))))
+              ;; mails all fans with their latest gossip
+              (do
+                ;; fetch all celebs
+                (populate-celebs!)
+                (email! "me@oskarth.com" "FYI: Mass mailing commencing.")
+                (mass-mail!!)))))
+
+;; this is when it will send emails
+;; (take 3 (rest (periodic-seq (time/now) (time/minutes 15))))
+;; (take 3 (rest (periodic-seq (time/today-at-midnight) (time/hours 24))))
 
 
 
@@ -195,7 +215,7 @@
    (if (= q "") "" (email-form q))))
 
 
-  ;; TODO: fix multi so it send for all, or do several at once?
+;; TODO: fix multi so it send for all, or do several at once?
 (defn assoc-page [q e]
   (update-fans! q e)
   (email! e
@@ -225,3 +245,6 @@
 
 (def app
   (handler/site app-routes))
+
+;; starts polling upon startup
+(polling!!)
