@@ -20,6 +20,9 @@
 ;; TODO: search for multiple users at once
 ;; TODO: feedback thingy
 ;; TODO: vote for us flerp?
+;; TODO: analytics
+
+
 
 ;; data
 
@@ -44,6 +47,16 @@
 ;; http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20asc&filter[fields][username]=oskarth&filter[fields][create_ts]=[2013-09-20T00:00:00Z+TO+*]
 
 
+
+;; utils
+
+(defn get-results [u]
+  (get (parse-string (:body u))
+       "results"))
+
+
+
+;; html partials
 
 (defn hn-link [id name]
   (link-to (str "https://news.ycombinator.com/item?id=" id) name))
@@ -72,21 +85,31 @@
       (make-submission (nth res i))
       (make-acomment (nth res i)))])
 
-(defn get-results [u]
-  (get (parse-string (:body u))
-       "results"))
-
-;; hits is total on server
-;; we can just do count right now
-;; TODO: bug with indexoutofbounds
 (defn make-show [res]
   (html5
    [:br]
    (for [n (range (count res))] (acomment res n))))
 
-;;(for [n (range 10)] (acomment res n))
+(defn search-form [q]
+  (html5 (form-to [:POST "/search"]
+                  "Search "
+                  [:input {:type "text" :name "q" :value (or q "") :size "17"}])))
 
-;; todo set date
+(defn email-form [q]
+  (html5
+   [:h1 "Get daily updates from " (str q) "."]
+   (form-to [:POST "/assoc"]
+                 "Email "
+                 [:input {:type "text" :name "e" :value "" :placeholder "" :size "17"}]
+                 [:input {:type "hidden" :name "q" :value (str q)}])
+         #_(form-to [:POST "/dissoc"]
+                  "Dissoc "
+                  [:input {:type "text" :name "e" :value "" :placeholder "test@example.com" :size "17"}])))
+
+
+
+;; api stuff
+
 (defn httptest [q]
   (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
         url2 "&filter[fields][create_ts]=[2013-09-25T00:00:00Z+TO+*]"
@@ -99,22 +122,7 @@
     (println "response2's status: " (:status @u2))
     (make-show (get (parse-string (:body @u1)) "results"))))
 
-(defn search-form [q]
-  (html5 (form-to [:POST "/search"]
-                  "Search "
-                  [:input {:type "text" :name "q" :value (or q "") :size "17"}])))
 
-
-(defn email-form [q]
-  (html5
-   [:h1 "Get daily updates from " (str q) "."]
-   (form-to [:POST "/assoc"]
-                 "Email "
-                 [:input {:type "text" :name "e" :value "" :placeholder "" :size "17"}]
-                 [:input {:type "hidden" :name "q" :value (str q)}])
-         #_(form-to [:POST "/dissoc"]
-                  "Dissoc "
-                  [:input {:type "text" :name "e" :value "" :placeholder "test@example.com" :size "17"}])))
 
 (defn template [& body]
   (html5
@@ -147,6 +155,10 @@
 (defn dissoc-all-page [q e]
   ;; TODO, POST form too
   )
+
+
+
+;; routes and app
 
 (defroutes app-routes
   (GET "/" [q e] (index-page "" ""))
