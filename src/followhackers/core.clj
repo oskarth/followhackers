@@ -90,13 +90,6 @@
   [:br]
   (for [n (range (count res))] (acomment res n)))
 
-;; TODO this should only happen at polling
-(defn populate-celebs! []
-  (load-celebs!) ;; first, to update celebs atom
-
-  (for [name (keys @celebs)]
-    (fetch-celeb! name)))
-
 ;; TODO update date
 (defn fetch-celeb! [name]
  (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
@@ -107,6 +100,14 @@
    (swap! celebs assoc name
           (html5 (htmlify (get (parse-string (:body @u1)) "results")))))
  (save-celebs!))
+
+;; TODO this should only happen at polling
+(defn populate-celebs! []
+  (load-celebs!) ;; first, to update celebs atom
+
+  (for [name (keys @celebs)]
+    (fetch-celeb! name)))
+
 
 
 ;; TODO: __
