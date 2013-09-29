@@ -99,11 +99,12 @@
 
 (defn email-form [q]
   (html5
-   [:h1 "Get daily updates from " (str q) "."]
+   [:h1 "Get daily updates from "
+    (link-to (str "https://news.ycombinator.com/user?id=" q) q) "."]
    (form-to [:POST "/assoc"]
-                 "Email "
-                 [:input {:type "text" :name "e" :value "" :placeholder "" :size "17"}]
-                 [:input {:type "hidden" :name "q" :value (str q)}])))
+            "Email "
+            [:input {:type "text" :name "e" :value "" :placeholder "" :size "17"}]
+            [:input {:type "hidden" :name "q" :value (str q)}])))
 
 
 ;; these are ugly but they work!
