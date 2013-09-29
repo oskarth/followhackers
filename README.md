@@ -1,22 +1,7 @@
-# Follow Hackers
+# To access the server
+* tmux a
 
-A Clojure library designed to ... well, that part is up to you.
-
-## TODO
-
-- Hello world
-- Select user (or term?)
-- Show 10 in reasonably pretty print
-- Possibly email
-
-How store data?
-
-## Usage
-
-FIXME
-
-## License
-
-Copyright © 2013 FIXME
-
-Distributed under the Eclipse Public License, the same as Clojure.
+# Also
+* lein ring server-headless in window 1
+* iptables 3000 -> 80
+* passwd should be set in a env called FHPWD
