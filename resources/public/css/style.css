@@ -1,12 +1,15 @@
 /* Shamelessly stolen from https://news.ycombinator.com/news.css */
 
+html {
+    display: table;
+    margin: auto;
+}
 
-
-.logo {margin:0.2em; padding-left:0.2em; color:#000; background-color:#ff9900; } /* added hn orange #ff9900 */
+.logo {margin:0.2em;padding:0.2em;color:#000; background-color:#ff9900; } /* added hn orange #ff9900 */
 .footer {text-align:center;}
 .byline {text-align:right;padding-right:1em;}
 
-body  { font-family:Verdana; font-size:10pt; color:#828282; background-color:#f6f6ef;} /* added bg color */
+body  { horizontal-align: middle; min-width:800px; font-family:Verdana; font-size:10pt; color:#828282; background-color:#f6f6ef;} /* added bg color */
 td    { font-family:Verdana; font-size:10pt; color:#828282; }
 
 .admin td   { font-family:Verdana; font-size:8.5pt; color:#000000; }

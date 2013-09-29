@@ -23,11 +23,8 @@
 ;; See (polling!!) (horrible name) for more
 ;;
 
-;; TODO: add unsubscribe text to mass mail
-;; TODO: don't send if empty
-;; TODO: polling to check every 24 hour and replace celebs db, right before email
-;; TODO: assoc/dissoc responses
-;; TODO: commit and tag release
+;; TODOS for a rainy day
+;;------------------------------------------------------------------------------
 ;; TODO: search for multiple users at once
 ;; TODO: vote for us
 ;; TODO: feedback bar
@@ -38,13 +35,12 @@
 ;; TODO: autofocus search
 ;; TODO: sup with celeb (load-celeb!) mismatch?
 ;; TODO: chime-in is really cpu-intensive, temp or not? other soln?
-;; TODO: env noob, oh well.
 ;; TODO: fix depre features in clj-time, ms
-;; TODO: figure out how to get the ENV to work in emacs for repl email polling testing
+;; TODO: figure out how to get the ENV to work in emacs for repl poll testing
 
 ;; atm swap manually when replling and debugging email
-;;(def passwd (System/getenv "FHPWD"))
-(def passwd "x6ffsu77f!")
+(def passwd (System/getenv "FHPWD"))
+;;(def passwd "")
 
 (def analytics
 "<script>
@@ -81,10 +77,11 @@
 
 (defn hn-link [id name] (link-to (str "https://news.ycombinator.com/item?id=" id) name))
 
+(defn date [] (str (time/month (time/today)) "." (time/day (time/today))))
 
 (defn email! [to content]
   (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass passwd :ssl :true}
-                {:from "followhackers@gmail.com" :to to "subject" "Follow Hackers: TODAY"
+                {:from "followhackers@gmail.com" :to to "subject" (str "Follow Hackers: " (date))
                  :body [{:type "text/html" :content content}]}))
 
 
@@ -108,6 +105,9 @@
                  [:input {:type "text" :name "e" :value "" :placeholder "" :size "17"}]
                  [:input {:type "hidden" :name "q" :value (str q)}])))
 
+
+;; these are ugly but they work!
+
 (defn make-submission [resi]
   (html5 " | submitted: " (link-to (get-in resi ["item" "url"])
                                    (get-in resi ["item" "title"]))
@@ -125,6 +125,8 @@
          (if (nil? (get-in (res i) ["item" "discussion"]))
            (make-submission (nth res i))
            (make-acomment (nth res i)))]])
+
+;;---
 
 (defn get-mail-content [fan]
   (html5
@@ -199,8 +201,8 @@
              ;; TODO: change this temporary test value!
              ;; SUPER IMPORTANT.
 
-             ;;(periodic-seq (time/today-at-midnight) (time/hours 24))
-             (periodic-seq (time/now) (time/minutes 5)))
+             ;;(periodic-seq (time/now) (time/minutes 5))
+             (periodic-seq (time/today-at-midnight) (time/hours 24)))
             (fn [time]
               ;; mails all fans with their latest gossip
               (do
@@ -227,10 +229,13 @@
     [:h4.logo "Follow Hackers"]
     [:p.byline (link-to "http://clojurecup.com/app.html?app=hs" "Vote for us in Clojure Cup 2013")]
     [:h1 "Search for hackers to follow."]
+    [:p "1. Search for " (link-to "http://www.news.ycombinator.com" "HN") " users (only the last 24 hours of activity are displayed)." [:br]
+     "2. Write your email." [:br]
+     "3. Get daily emails with their activity."]
     [:br]
     body
     [:hr]
-    [:div.footer "Design/CSS from " (link-to "http://www.news.ycombinator.com" "HN")
+    [:div.footer "CSS from " (link-to "http://www.news.ycombinator.com" "HN")
      ". API from " (link-to "http://www.hnsearch.com" "HNSearch")
      ". Made by " (link-to "http://twitter.com/oskarth" "@oskarth") "."]]))
 
@@ -246,7 +251,9 @@
 (defn assoc-page [celeb fan]
   (update-fans! celeb fan)
   (email! fan (get-mail-body fan))
-  (str "You've subscribed to " celeb ". Check your inbox!"))
+  (html5 "You've subscribed to " celeb ". Check your inbox!"
+         [:br] [:br]
+       (link-to "http://www.hs.clojurecup.com" "Want more?")))
 
 ;; page with form where you unsubscribe
 (defn dissoc-page []
