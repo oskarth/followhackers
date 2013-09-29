@@ -31,11 +31,11 @@
 
 ;; data
 
-;;(def celebs (atom {}))
+(def celebs (atom {}))
 (defn save-celebs! [] (spit "data/celebs.db" (prn-str @celebs)))
 (defn load-celebs! [] (reset! celebs (read-string (slurp "data/celebs.db"))))
 
-;;(def fans (atom {}))
+(def fans (atom {}))
 (defn save-fans! [] (spit "data/fans.db" (prn-str @fans)))
 (defn load-fans! [] (reset! fans (read-string (slurp "data/fans.db"))))
 
