@@ -1,4 +1,5 @@
 (ns followhackers.core
+  ;; so many use cases ;)
   (:use [compojure.core]
         [hiccup.page]
         [hiccup.form]
@@ -12,16 +13,17 @@
             [compojure.route :as route]
             [org.httpkit.client :as http]))
 
-;; TODO: postal for email
+
 ;; TODO: date fix last 24 hours
 ;; TODO: polling to check every 24 hour and replace celebs db, right before email
 
 ;; TODO: assoc/dissoc responses
 ;; (def f (future (Thread/sleep 10000) (println "done") 100))
+
 ;; TODO: commit and tag release
 ;; TODO: search for multiple users at once
-;; TODO: feedback thingy
-;; TODO: vote for us flerp?
+;; TODO: vote for us
+;; TODO: feedback bar
 ;; TODO: fan subscribe counter
 ;; TODO: analytics
 
@@ -172,28 +174,32 @@
    [:br]
    (if (= q "") "" (email-form q))))
 
-;; TODO side effects
-(defn assoc-page [q e]
 
+(defn update-fans! [q e]
   ;; => {"mail1" #{"pg" "grellas"}, "mail2" #{"pg" "tokenadult"}
   (swap! fans
          (fn [m] (assoc m (str e)
                        (conj (get m (str e)) (str q)))))
   (println "Fans: " @fans)
-  (save-fans!) ;; saves to disc
+  (save-fans!))
 
+(defn update-celebs! [q e]
   ;; => {"pg" "ALL-THE-TEXTS-IN-A-STR?", "grellas", "TEXT"}
   ;; the text will be populate at polling
   (swap! celebs
          (fn [m] (assoc m (str q) "")))
   (println "Celebs: " @celebs)
-  (save-celebs!) ;; saves to disc
+  (save-celebs!))
+
+
+;; TODO side effects
+(defn assoc-page [q e]
+  (update-fans! q e)
+  (update-celebs! q e)
 
   ;; TODO: make async
-  (email! "me@oskarth.com" "bodytest") ;; TODO: fix to and body
-
-  ;; QQQ TODO: first, poll-fn to get celebs data
-
+  (email! e
+          (str "You subscribed to " q "\n\n To unsubscribe, click HERE.")) ;; TODO: fix body and unsub
 
   (str "You've subscribed to " q ". Check your inbox!"))
 
