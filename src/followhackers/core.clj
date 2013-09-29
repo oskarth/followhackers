@@ -235,7 +235,7 @@
     [:br]
     body
     [:hr]
-    [:div.footer "CSS from " (link-to "http://www.news.ycombinator.com" "HN")
+    [:div.footer "CSS from " (link-to "http://news.ycombinator.com" "HN")
      ". API from " (link-to "http://www.hnsearch.com" "HNSearch")
      ". Made by " (link-to "http://twitter.com/oskarth" "@oskarth") "."]]))
 
