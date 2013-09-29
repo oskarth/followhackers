@@ -253,7 +253,7 @@
   (email! fan (get-mail-body fan))
   (html5 "You've subscribed to " celeb ". Check your inbox!"
          [:br] [:br]
-       (link-to "http://www.hs.clojurecup.com" "Want more?")))
+       (link-to "http://hs.clojurecup.com" "Want more?")))
 
 ;; page with form where you unsubscribe
 (defn dissoc-page []
