@@ -13,10 +13,11 @@
             [compojure.route :as route]
             [org.httpkit.client :as http]))
 
-
+;; TODO: email body test send
 ;; TODO: date fix last 24 hours
-;; TODO: polling to check every 24 hour and replace celebs db, right before email
+;; TODO: polling
 
+;; TODO: polling to check every 24 hour and replace celebs db, right before email
 ;; TODO: assoc/dissoc responses
 ;; (def f (future (Thread/sleep 10000) (println "done") 100))
 
@@ -27,7 +28,10 @@
 ;; TODO: fan subscribe counter
 ;; TODO: analytics
 
-;; TODO: nothing should be there at start page
+;; TODO: margins at end if long results
+;; TODO: fix unsubscribe
+
+
 
 ;; data
 
@@ -39,19 +43,13 @@
 (defn save-fans! [] (spit "data/fans.db" (prn-str @fans)))
 (defn load-fans! [] (reset! fans (read-string (slurp "data/fans.db"))))
 
-;;(save-celebs!)
-;;(save-fans!)
-;;(load-celebs!)
-;;(load-fans!)
 
-@celebs
+;; utils / partials
 
-;; http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][username]=pg&pretty_print=true&filter[fields][create_ts]=[2013-09-20T00:00:00Z%20+%20TO%20+%20*]
-;; (def hnurl "http://api.thriftdb.com/api.hnsearch.com/items/_search?filter[fields][username]=oskarth")
-;;"http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts=asc&limit=100&?filter[fields][username]=oskarth&filter[fields][create_ts]=[2013-01-01T00:00:00Z+TO+*]"
-;; http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20asc&filter[fields][username]=oskarth&filter[fields][create_ts]=[2013-09-20T00:00:00Z+TO+*]
-
-;; utils
+(defn email! [to content]
+  (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass (System/getenv "FHPWD") :ssl :true}
+                {:from "followhackers@gmail.com" :to to "subject" "Follow Hackers: TODAY"
+                 :body [{:type "text/html" :content content}]}))
 
 (defn get-results [u]
   (get (parse-string (:body u))
@@ -85,7 +83,6 @@
       (make-submission (nth res i))
       (make-acomment (nth res i)))])
 
-
 (defn htmlify [res]
   [:br]
   (for [n (range (count res))] (acomment res n)))
@@ -108,25 +105,14 @@
   (for [name (keys @celebs)]
     (fetch-celeb! name)))
 
-
-
-;; TODO: __
-;; not quite, but ish; iterate over vals and only if exists
-;; (spit "/tmp/foo" (html5 @celebs))
-
-(defn email! [to body]
-  (send-message ^{:host "smtp.gmail.com" :user "followhackers" :pass (System/getenv "FHPWD") :ssl :true}
-                {:from "followhackers@gmail.com" :to to "subject" "Follow Hackers: TODAY" :body body}))
-
-
-
-;; html partials
-
-
 (defn make-show [res]
   (html5
    [:br]
    (for [n (range (count res))] (acomment res n))))
+
+
+
+;; forms
 
 (defn search-form [q]
   (html5 (form-to [:POST "/search"]
@@ -146,16 +132,33 @@
 
 
 
-;; api stuff
 
-(defn httptest [q]
+;; TODO fix date here too!
+(defn httptest [name]
   (let [url1 "http://api.thriftdb.com/api.hnsearch.com/items/_search?sortby=create_ts%20desc&filter[fields][username]="
         url2 "&filter[fields][create_ts]=[2013-09-25T00:00:00Z+TO+*]"
-        u1 (http/get (str url1 q url2))]
-    (println "response's status: " (:status @u1))
+        u1 (http/get (str url1 name url2))]
+
+    ;; store html in db
+    (swap! celebs assoc name
+           (html5 (htmlify (get (parse-string (:body @u1)) "results"))))
+
+    ;; here it's right! why not saving?
+    (println "Celebs is now " @celebs)
+    (save-celebs!)
     (make-show (get (parse-string (:body @u1)) "results"))))
 
+(defn update-fans! [q e]
+  ;; => {"mail1" #{"pg" "grellas"}, "mail2" #{"pg" "tokenadult"}
+  (swap! fans
+         (fn [m] (assoc m (str e)
+                       (conj (get m (str e)) (str q)))))
+  (println "Fans: " @fans)
+  (save-fans!))
 
+
+
+;; templates / pages
 
 (defn template [& body]
   (html5
@@ -177,38 +180,19 @@
    (if (= q "") "" (email-form q))))
 
 
-(defn update-fans! [q e]
-  ;; => {"mail1" #{"pg" "grellas"}, "mail2" #{"pg" "tokenadult"}
-  (swap! fans
-         (fn [m] (assoc m (str e)
-                       (conj (get m (str e)) (str q)))))
-  (println "Fans: " @fans)
-  (save-fans!))
-
-(defn update-celebs! [q e]
-  ;; => {"pg" "ALL-THE-TEXTS-IN-A-STR?", "grellas", "TEXT"}
-  ;; the text will be populate at polling
-  (swap! celebs
-         (fn [m] (assoc m (str q) "")))
-  (println "Celebs: " @celebs)
-  (save-celebs!))
-
-
-;; TODO side effects
 (defn assoc-page [q e]
   (update-fans! q e)
-  (update-celebs! q e)
+  ;; TODO: fix multi so it send for all, or do several at once?
 
-  ;; TODO: this is what it would've looked like yesterday
-  ;; TODO: make async
   (email! e
-          (str "You subscribed to " q "\n\n To unsubscribe, click HERE.")) ;; TODO: fix body and unsub
+          (html5
+           "Activity last 24 hours:" [:br] [:br]
+           (get @celebs q)
+           [:br] [:br] "To unsubscribe, click " (link-to "hs.clojurecup.com/dissoc" "here")))
 
   (str "You've subscribed to " q ". Check your inbox!"))
 
-
-
-;; TODO side effects
+;; TODO side effects unsubscribe
 (defn dissoc-page [q e]
   (str "You've unsubscribed from " q "."))
 
