@@ -17,11 +17,16 @@
             [org.httpkit.client :as http]
             [chime :refer [chime-at]]))
 
-;; TODO: if empty, don't show
-;; TODO: polling
+;;
+;; WARNING: This code contains side-effects that can affect other human beings!
+;; It SENDS EMAILS TO PEOPLE at set intervals
+;; See (polling!!) (horrible name) for more
+;;
+
+;; TODO: add unsubscribe text to mass mail
+;; TODO: don't send if empty
 ;; TODO: polling to check every 24 hour and replace celebs db, right before email
 ;; TODO: assoc/dissoc responses
-;; (def f (future (Thread/sleep 10000) (println "done") 100))
 ;; TODO: commit and tag release
 ;; TODO: search for multiple users at once
 ;; TODO: vote for us
@@ -34,12 +39,12 @@
 ;; TODO: sup with celeb (load-celeb!) mismatch?
 ;; TODO: chime-in is really cpu-intensive, temp or not? other soln?
 ;; TODO: env noob, oh well.
-
-;; WARNING: POLLING is started automatically!
-
+;; TODO: fix depre features in clj-time, ms
 ;; TODO: figure out how to get the ENV to work in emacs for repl email polling testing
-;; atm swap manually when replling
-(def passwd (System/getenv "FHPWD"))
+
+;; atm swap manually when replling and debugging email
+;;(def passwd (System/getenv "FHPWD"))
+(def passwd "x6ffsu77f!")
 
 (def analytics
 "<script>
@@ -202,10 +207,14 @@
     analytics]
    [:body
     [:h4.logo "Follow Hackers"]
-    [:p.byline "Made during Clojure Cup 2013"] ;; TODO vote for us
+    [:p.byline (link-to "http://clojurecup.com/app.html?app=hs" "Vote for us in Clojure Cup 2013")]
     [:h1 "Search for hackers to follow."]
     [:br]
-    body]))
+    body
+    [:hr]
+    [:div.footer "Design/CSS from " (link-to "http://www.news.ycombinator.com" "HN")
+     ". API from " (link-to "http://www.hnsearch.com" "HNSearch")
+     ". Made by " (link-to "http://twitter.com/oskarth" "@oskarth") "."]]))
 
 (defn index-page [q e]
   (template
