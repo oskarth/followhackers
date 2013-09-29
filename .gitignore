@@ -4,7 +4,7 @@
 /checkouts
 pom.xml
 pom.xml.asc
-/data
+/data/*
 *.jar
 *.class
 .lein-deps-sum

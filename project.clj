@@ -10,6 +10,8 @@
                  [hiccup "1.0.2"]
                  [http-kit "2.1.10"]
                  [cheshire "5.2.0"]
+                 [overtone/at-at "1.2.0"] ;; poss delete
+                 [jarohen/chime "0.1.1"]
                  [com.draines/postal "1.11.0"]]
   :plugins [[lein-ring "0.8.7"]]
   :ring  {:handler followhackers.core/app})
