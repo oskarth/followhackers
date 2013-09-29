@@ -60,12 +60,30 @@
 (defn hn-link [id name]
   (link-to (str "https://news.ycombinator.com/item?id=" id) name))
 
+
+(defn make-submission [resi]
+  ;; TODO: link to submission?
+  (html5
+   " | submitted: " (link-to (get-in resi ["item" "url"])
+                             (get-in resi ["item" "title"]))
+   [:br] [:br]))
+
 (defn make-acomment [resi]
   (html5
    " | on: " (hn-link (get-in resi ["item" "discussion" "id"])
                       (get-in resi ["item" "discussion" "title"]))
    [:br]
    [:span {:class "comment"} (get-in resi ["item" "text"])]))
+
+(defn acomment [res i]
+  [:div
+    "by " (get-in (nth res i) ["item" "username"]) " | "
+    (hn-link (get-in (nth res i) ["item" "id"]) "link")
+
+    ;; if discussion is nil, it's a submission
+    (if (nil? (get-in (res i) ["item" "discussion"]))
+      (make-submission (nth res i))
+      (make-acomment (nth res i)))])
 
 
 (defn htmlify [res]
@@ -103,22 +121,6 @@
 
 ;; html partials
 
-(defn make-submission [resi]
-  ;; TODO: link to submission?
-  (html5
-   " | submitted: " (link-to (get-in resi ["item" "url"])
-                             (get-in resi ["item" "title"]))
-   [:br] [:br]))
-
-(defn acomment [res i]
-  [:div
-    "by " (get-in (nth res i) ["item" "username"]) " | "
-    (hn-link (get-in (nth res i) ["item" "id"]) "link")
-
-    ;; if discussion is nil, it's a submission
-    (if (nil? (get-in (res i) ["item" "discussion"]))
-      (make-submission (nth res i))
-      (make-acomment (nth res i)))])
 
 (defn make-show [res]
   (html5
