@@ -20,24 +20,25 @@
 ;; TODO: search for multiple users at once
 ;; TODO: feedback thingy
 ;; TODO: vote for us flerp?
+;; TODO: fan subscribe counter
 ;; TODO: analytics
 
 
 
 ;; data
 
-(def celebs (atom {"pg" "all pg text"}))
-(defn save-celebs! [] (spit "data/celebs.db" (prn-str @celebs)))
+(def celebs (atom {}))
+(defn save-celebs! [](spit "data/celebs.db" (prn-str @celebs)))
 (defn load-celebs! [] (reset! celebs (read-string (slurp "data/celebs.db"))))
 
-(def fans (atom {"me@oskarth.com" ["pg grellas"]}))
+(def fans (atom {}))
 (defn save-fans! [] (spit "data/fans.db" (prn-str @fans)))
 (defn load-fans! [] (reset! fans (read-string (slurp "data/fans.db"))))
 
-(save-celebs!)
-(save-fans!)
-(load-celebs!)
-(load-fans!)
+;;(save-celebs!)
+;;(save-fans!)
+;;(load-celebs!)
+;;(load-fans!)
 
 
 
@@ -145,7 +146,21 @@
 
 ;; TODO side effects
 (defn assoc-page [q e]
-  (println "subscribe e " e " to q " q) ;; db time
+
+  ;; => {"mail1" #{"pg" "grellas"}, "mail2" #{"pg" "tokenadult"}
+  (swap! fans
+         (fn [m] (assoc m (str e)
+                       (conj (get m (str e)) (str q)))))
+  (println "Fans: " @fans)
+  (save-fans!) ;; saves to disc
+
+  ;; => {"pg" "ALL-THE-TEXTS-IN-A-STR?", "grellas", "TEXT"}
+  ;; the text will be populate at polling
+  (swap! celebs
+         (fn [m] (assoc m (str q) "")))
+  (println "Celebs: " @celebs)
+  (save-celebs!) ;; saves to disc
+
   (str "You've subscribed to " q ". Check your inbox!"))
 
 ;; TODO side effects
