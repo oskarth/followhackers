@@ -5,6 +5,8 @@
 pom.xml
 pom.xml.asc
 /data/*
+/data/celebs.db
+/data/fans.db
 *.jar
 *.class
 .lein-deps-sum

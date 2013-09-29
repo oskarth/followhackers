@@ -64,26 +64,6 @@
 
 
 
-;; update data functions
-
-;; store celebs html in db
-;; schema: {"pg" "HTML_TEXT" "grellas" "HTML_TEXT2"}
-(defn update-celeb! [celeb resp]
-    (let [res (get (parse-string (:body resp)) "results")]
-    (swap! celebs assoc celeb
-           (html5 [:br] (for [n (range (count res))] (acomment res n))))
-    (save-celebs!)))
-
-;; store fans in db
-;; schema: {"mail1" #{"pg" "grellas"}, "mail2" #{"pg" "tokenadult"}
-(defn update-fans! [celeb fan]
-  (swap! fans
-         (fn [m] (assoc m (str fan)
-                       (conj (set (get m (str fan))) (str celeb)))))
-  (save-fans!))
-
-
-
 ;; utils
 
 (defn midnight [] (timec/to-string (time/minus- (time/today-at-midnight) (time/days 1))))
@@ -129,6 +109,26 @@
          (if (nil? (get-in (res i) ["item" "discussion"]))
            (make-submission (nth res i))
            (make-acomment (nth res i)))]])
+
+
+
+;; update data functions
+
+;; store celebs html in db
+;; schema: {"pg" "HTML_TEXT" "grellas" "HTML_TEXT2"}
+(defn update-celeb! [celeb resp]
+    (let [res (get (parse-string (:body resp)) "results")]
+    (swap! celebs assoc celeb
+           (html5 [:br] (for [n (range (count res))] (acomment res n))))
+    (save-celebs!)))
+
+;; store fans in db
+;; schema: {"mail1" #{"pg" "grellas"}, "mail2" #{"pg" "tokenadult"}
+(defn update-fans! [celeb fan]
+  (swap! fans
+         (fn [m] (assoc m (str fan)
+                       (conj (set (get m (str fan))) (str celeb)))))
+  (save-fans!))
 
 
 
