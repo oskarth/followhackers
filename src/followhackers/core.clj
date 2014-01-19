@@ -1,5 +1,4 @@
 (ns followhackers.core
-  ;; so many use cases ;)
   (:use [compojure.core]
         [hiccup.page]
         [hiccup.form]
@@ -17,7 +16,6 @@
             [org.httpkit.client :as http]
             [chime :refer [chime-at]]))
 
-;;
 ;; WARNING: This code contains side-effects that can affect other human beings!
 ;; It SENDS EMAILS TO PEOPLE at set intervals
 ;; See (polling!!) (horrible name) for more
